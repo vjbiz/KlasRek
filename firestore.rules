@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Connection Health Check Document
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // Parent Resource: Classes
+    match /classes/{classId} {
+      function isValidClass(data) {
+        return data.id is string && data.id.size() <= 128 &&
+               data.teacherId is string && data.teacherId == request.auth.uid &&
+               data.subjectCode is string && data.subjectCode.size() > 0 && data.subjectCode.size() <= 64 &&
+               data.subjectName is string && data.subjectName.size() > 0 && data.subjectName.size() <= 128 &&
+               data.className is string && data.className.size() > 0 && data.className.size() <= 64 &&
+               data.semester is string && data.semester.size() <= 32 &&
+               data.academicYear is string && data.academicYear.size() <= 32 &&
+               data.schoolName is string && data.schoolName.size() <= 128 &&
+               data.teacherName is string && data.teacherName.size() <= 128 &&
+               (!('passingScore' in data) || (data.passingScore is number && data.passingScore >= 0 && data.passingScore <= 100)) &&
+               (!('teacherEmail' in data) || (data.teacherEmail is string && data.teacherEmail.size() <= 128)) &&
+               (!('attendanceDays' in data) || (data.attendanceDays is list && data.attendanceDays.size() <= 60)) &&
+               (!('speakingColumns' in data) || (data.speakingColumns is list && data.speakingColumns.size() <= 30)) &&
+               (!('quizzesColumns' in data) || (data.quizzesColumns is list && data.quizzesColumns.size() <= 30)) &&
+               (!('participationColumns' in data) || (data.participationColumns is list && data.participationColumns.size() <= 30)) &&
+               (!('notebookColumns' in data) || (data.notebookColumns is list && data.notebookColumns.size() <= 30));
+      }
+
+      allow get: if isSignedIn() && isValidId(classId) && existing().teacherId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.teacherId == request.auth.uid;
+      
+      allow create: if isSignedIn() && isValidId(classId) &&
+                       classId == incoming().id &&
+                       incoming().teacherId == request.auth.uid &&
+                       incoming().keys().hasAll(['id', 'teacherId', 'subjectCode', 'subjectName', 'className', 'semester', 'academicYear', 'schoolName', 'teacherName']) &&
+                       isValidClass(incoming()) &&
+                       incoming().createdAt == request.time &&
+                       incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() && isValidId(classId) &&
+                       existing().teacherId == request.auth.uid &&
+                       incoming().id == existing().id &&
+                       incoming().teacherId == existing().teacherId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidClass(incoming()) &&
+                       incoming().updatedAt == request.time;
+
+      allow delete: if isSignedIn() && isValidId(classId) && existing().teacherId == request.auth.uid;
+
+      // Subcollection: Students in Class
+      match /students/{studentId} {
+        function isClassOwner(cId) {
+          return exists(/databases/$(database)/documents/classes/$(cId)) &&
+                 get(/databases/$(database)/documents/classes/$(cId)).data.teacherId == request.auth.uid;
+        }
+
+        function isValidStudent(data, cId) {
+          return data.id is string && data.id.size() <= 128 &&
+                 data.classId is string && data.classId == cId &&
+                 data.teacherId is string && data.teacherId == request.auth.uid &&
+                 data.number is number && data.number >= 1 && data.number <= 300 &&
+                 data.studentNumber is string && data.studentNumber.size() > 0 && data.studentNumber.size() <= 64 &&
+                 data.thaiName is string && data.thaiName.size() > 0 && data.thaiName.size() <= 128 &&
+                 data.englishName is string && data.englishName.size() > 0 && data.englishName.size() <= 128 &&
+                 (!('password' in data) || (data.password is string && data.password.size() <= 64)) &&
+                 (!('attendance' in data) || data.attendance is map) &&
+                 (!('speakingScores' in data) || data.speakingScores is map) &&
+                 (!('quizzesScores' in data) || data.quizzesScores is map) &&
+                 (!('participationScores' in data) || data.participationScores is map) &&
+                 (!('notebookScores' in data) || data.notebookScores is map) &&
+                 (!('midtermScore' in data) || data.midtermScore == null || (data.midtermScore is number && data.midtermScore >= 0 && data.midtermScore <= 100)) &&
+                 (!('finalScore' in data) || data.finalScore == null || (data.finalScore is number && data.finalScore >= 0 && data.finalScore <= 100));
+        }
+
+        allow get: if isSignedIn() && isValidId(studentId) &&
+                      (existing().teacherId == request.auth.uid || isClassOwner(classId));
+        
+        allow list: if isSignedIn() &&
+                       resource.data.teacherId == request.auth.uid;
+
+        allow create: if isSignedIn() && isValidId(classId) && isValidId(studentId) &&
+                         studentId == incoming().id &&
+                         incoming().classId == classId &&
+                         incoming().teacherId == request.auth.uid &&
+                         isClassOwner(classId) &&
+                         isValidStudent(incoming(), classId) &&
+                         incoming().createdAt == request.time &&
+                         incoming().updatedAt == request.time;
+
+        allow update: if isSignedIn() && isValidId(classId) && isValidId(studentId) &&
+                         existing().teacherId == request.auth.uid &&
+                         isClassOwner(classId) &&
+                         incoming().id == existing().id &&
+                         incoming().classId == existing().classId &&
+                         incoming().teacherId == existing().teacherId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidStudent(incoming(), classId) &&
+                         incoming().updatedAt == request.time;
+
+        allow delete: if isSignedIn() && isValidId(classId) && isValidId(studentId) &&
+                         (existing().teacherId == request.auth.uid || isClassOwner(classId));
+      }
+    }
+  }
+}

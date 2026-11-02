@@ -29,6 +29,10 @@ import { AddColumnModal } from './components/AddColumnModal';
 import { StudentLogin } from './components/StudentLogin';
 import { StudentDashboard } from './components/StudentDashboard';
 import { StudentCredentialsModal } from './components/StudentCredentialsModal';
+import { User } from 'firebase/auth';
+import { initAuth } from './services/googleAuth';
+import { GoogleSheetsModal } from './components/GoogleSheetsModal';
+import { FirebaseModal } from './components/FirebaseModal';
 
 export default function App() {
   // Local storage keys
@@ -39,6 +43,9 @@ export default function App() {
   const STORAGE_KEY_QZ = 'thai_class_record_qz_v1';
   const STORAGE_KEY_PART = 'thai_class_record_part_v1';
   const STORAGE_KEY_NB = 'thai_class_record_nb_v1';
+  const STORAGE_KEY_SHEET_ID = 'thai_class_record_sheet_id_v1';
+  const STORAGE_KEY_SHEET_NAME = 'thai_class_record_sheet_name_v1';
+  const STORAGE_KEY_SHEET_URL = 'thai_class_record_sheet_url_v1';
 
   // State with LocalStorage fallbacks
   const [settings, setSettings] = useState<ClassSettings>(() => {
@@ -89,16 +96,74 @@ export default function App() {
     return sessionStorage.getItem('logged_student_id');
   });
 
+  // Google Account & Google Sheets State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState(false);
+  const [connectedSpreadsheetId, setConnectedSpreadsheetId] = useState<string | null>(() => {
+    return localStorage.getItem(STORAGE_KEY_SHEET_ID);
+  });
+  const [connectedSpreadsheetName, setConnectedSpreadsheetName] = useState<string | null>(() => {
+    return localStorage.getItem(STORAGE_KEY_SHEET_NAME);
+  });
+  const [connectedSpreadsheetUrl, setConnectedSpreadsheetUrl] = useState<string | null>(() => {
+    return localStorage.getItem(STORAGE_KEY_SHEET_URL);
+  });
+
+  // Initialize Firebase Auth listener for Google Account
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      (user) => setCurrentUser(user),
+      () => setCurrentUser(null)
+    );
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  const handleConnectSpreadsheet = (id: string, url: string, name: string) => {
+    setConnectedSpreadsheetId(id);
+    setConnectedSpreadsheetName(name);
+    setConnectedSpreadsheetUrl(url);
+    if (id) {
+      localStorage.setItem(STORAGE_KEY_SHEET_ID, id);
+      localStorage.setItem(STORAGE_KEY_SHEET_NAME, name);
+      localStorage.setItem(STORAGE_KEY_SHEET_URL, url);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_SHEET_ID);
+      localStorage.removeItem(STORAGE_KEY_SHEET_NAME);
+      localStorage.removeItem(STORAGE_KEY_SHEET_URL);
+    }
+  };
+
   // UI state for Teacher Mode
   const [activeView, setActiveView] = useState<'spreadsheet' | 'analytics'>('spreadsheet');
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isGoogleScriptModalOpen, setIsGoogleScriptModalOpen] = useState(false);
+  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
 
   const [addColumnCategory, setAddColumnCategory] = useState<'speaking' | 'quizzes' | 'participation' | 'notebook' | null>(null);
+
+  const handleLoadClassFromFirebase = (data: {
+    settings: Partial<ClassSettings>;
+    attendanceDays: AttendanceDay[];
+    speakingColumns: ScoreColumn[];
+    quizzesColumns: ScoreColumn[];
+    participationColumns: ScoreColumn[];
+    notebookColumns: ScoreColumn[];
+    students: Student[];
+  }) => {
+    setSettings((prev) => ({ ...prev, ...data.settings }));
+    if (data.attendanceDays?.length) setAttendanceDays(data.attendanceDays);
+    if (data.speakingColumns?.length) setSpeakingColumns(data.speakingColumns);
+    if (data.quizzesColumns?.length) setQuizzesColumns(data.quizzesColumns);
+    if (data.participationColumns?.length) setParticipationColumns(data.participationColumns);
+    if (data.notebookColumns?.length) setNotebookColumns(data.notebookColumns);
+    if (data.students?.length) setStudents(data.students);
+  };
 
   // Sync to LocalStorage
   useEffect(() => {
@@ -429,6 +494,10 @@ export default function App() {
           setIsStudentModalOpen(true);
         }}
         onOpenGoogleScript={() => setIsGoogleScriptModalOpen(true)}
+        onOpenGoogleSheets={() => setIsGoogleSheetsModalOpen(true)}
+        isGoogleSheetsConnected={Boolean(connectedSpreadsheetId)}
+        connectedSheetName={connectedSpreadsheetName}
+        onOpenFirebase={() => setIsFirebaseModalOpen(true)}
         onOpenAnalytics={() => setActiveView('analytics')}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
         onOpenBatchInput={() => setIsBatchModalOpen(true)}
@@ -490,23 +559,73 @@ export default function App() {
           </span>
           <div className="flex items-center gap-3">
             <button
+              onClick={() => setIsFirebaseModalOpen(true)}
+              className="text-amber-600 dark:text-amber-400 font-bold hover:underline flex items-center gap-1"
+            >
+              <span>🔥 Firebase Firestore</span>
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => setIsGoogleSheetsModalOpen(true)}
+              className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1"
+            >
+              <span>📊 Google Sheets {connectedSpreadsheetId ? `(${connectedSpreadsheetName || 'Linked'})` : 'Connect'}</span>
+            </button>
+            <span>•</span>
+            <button
               onClick={() => setIsCredentialsModalOpen(true)}
               className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
             >
-              🔑 Student Passwords &amp; Slips
+              🔑 Passwords &amp; Slips
             </button>
             <span>•</span>
             <button
               onClick={() => setIsGoogleScriptModalOpen(true)}
               className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
             >
-              📋 Google Apps Script (.gs) Generator
+              📋 Google Apps Script
             </button>
           </div>
         </div>
       </footer>
 
       {/* Modals */}
+      <FirebaseModal
+        isOpen={isFirebaseModalOpen}
+        onClose={() => setIsFirebaseModalOpen(false)}
+        currentUser={currentUser}
+        onAuthChange={setCurrentUser}
+        settings={settings}
+        attendanceDays={attendanceDays}
+        speakingColumns={speakingColumns}
+        quizzesColumns={quizzesColumns}
+        participationColumns={participationColumns}
+        notebookColumns={notebookColumns}
+        students={students}
+        onLoadClass={handleLoadClassFromFirebase}
+      />
+
+      <GoogleSheetsModal
+        isOpen={isGoogleSheetsModalOpen}
+        onClose={() => setIsGoogleSheetsModalOpen(false)}
+        currentUser={currentUser}
+        onAuthChange={setCurrentUser}
+        settings={settings}
+        attendanceDays={attendanceDays}
+        speakingColumns={speakingColumns}
+        quizzesColumns={quizzesColumns}
+        participationColumns={participationColumns}
+        notebookColumns={notebookColumns}
+        students={students}
+        onImportStudents={(imported) => {
+          setStudents(imported);
+        }}
+        connectedSpreadsheetId={connectedSpreadsheetId}
+        onConnectSpreadsheet={handleConnectSpreadsheet}
+        connectedSpreadsheetName={connectedSpreadsheetName}
+        connectedSpreadsheetUrl={connectedSpreadsheetUrl}
+      />
+
       <StudentModal
         isOpen={isStudentModalOpen}
         onClose={() => {

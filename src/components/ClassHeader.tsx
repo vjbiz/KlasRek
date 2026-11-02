@@ -12,7 +12,9 @@ import {
   GraduationCap,
   Sparkles,
   RotateCcw,
-  KeyRound
+  KeyRound,
+  FileSpreadsheet,
+  Database
 } from 'lucide-react';
 import { ClassSettings, StudentCalculation } from '../types/classRecord';
 
@@ -29,6 +31,10 @@ interface ClassHeaderProps {
   onResetData: () => void;
   onOpenCredentials: () => void;
   onSwitchToStudentPortal: () => void;
+  onOpenGoogleSheets: () => void;
+  isGoogleSheetsConnected?: boolean;
+  connectedSheetName?: string | null;
+  onOpenFirebase?: () => void;
   activeView: 'spreadsheet' | 'analytics';
   setActiveView: (view: 'spreadsheet' | 'analytics') => void;
 }
@@ -45,6 +51,10 @@ export const ClassHeader: React.FC<ClassHeaderProps> = ({
   onResetData,
   onOpenCredentials,
   onSwitchToStudentPortal,
+  onOpenGoogleSheets,
+  isGoogleSheetsConnected,
+  connectedSheetName,
+  onOpenFirebase,
   activeView,
   setActiveView,
 }) => {
@@ -113,6 +123,37 @@ export const ClassHeader: React.FC<ClassHeaderProps> = ({
                 Analytics
               </button>
             </div>
+
+            {/* Firebase Cloud Firestore */}
+            {onOpenFirebase && (
+              <button
+                onClick={onOpenFirebase}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-all flex items-center gap-1.5 shadow-2xs"
+                title="Save & Load class records from Firebase Cloud Firestore"
+              >
+                <Database className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Cloud Firestore</span>
+              </button>
+            )}
+
+            {/* Google Sheets API Integration */}
+            <button
+              onClick={onOpenGoogleSheets}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-2xs border ${
+                isGoogleSheetsConnected
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-50'
+              }`}
+              title={isGoogleSheetsConnected ? `Connected to ${connectedSheetName || 'Google Sheet'}` : 'Connect Google Sheets & Drive'}
+            >
+              <FileSpreadsheet className={`w-3.5 h-3.5 ${isGoogleSheetsConnected ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-600'}`} />
+              <span>Google Sheets</span>
+              {isGoogleSheetsConnected ? (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Connected" />
+              ) : (
+                <span className="text-[10px] text-slate-400 font-normal">Connect</span>
+              )}
+            </button>
 
             {/* Google Script Generator Modal (Highlighted) */}
             <button

@@ -1,0 +1,194 @@
+{
+  "entities": {
+    "ClassRecord": {
+      "title": "ClassRecord",
+      "description": "A class record metadata and configuration document owned by a teacher.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the class."
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the teacher who owns this class record."
+        },
+        "teacherEmail": {
+          "type": "string",
+          "description": "Email address of the teacher."
+        },
+        "subjectCode": {
+          "type": "string",
+          "description": "Thai curriculum subject code (e.g., ENG21101)."
+        },
+        "subjectName": {
+          "type": "string",
+          "description": "Subject name in Thai or English."
+        },
+        "className": {
+          "type": "string",
+          "description": "Class / Room designation (e.g., M.1/2)."
+        },
+        "semester": {
+          "type": "string",
+          "description": "Academic semester (e.g., 1 or 2)."
+        },
+        "academicYear": {
+          "type": "string",
+          "description": "Academic year (e.g., 2567 or 2024)."
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "Name of the school or educational institution."
+        },
+        "teacherName": {
+          "type": "string",
+          "description": "Instructor or Teacher full name."
+        },
+        "passingScore": {
+          "type": "number",
+          "description": "Passing score threshold, default 50."
+        },
+        "attendanceDays": {
+          "type": "array",
+          "description": "List of attendance days configured for this class."
+        },
+        "speakingColumns": {
+          "type": "array",
+          "description": "Configured speaking assessment columns."
+        },
+        "quizzesColumns": {
+          "type": "array",
+          "description": "Configured quizzes assessment columns."
+        },
+        "participationColumns": {
+          "type": "array",
+          "description": "Configured participation assessment columns."
+        },
+        "notebookColumns": {
+          "type": "array",
+          "description": "Configured notebook assessment columns."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when this class record was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when this class record was last updated."
+        }
+      },
+      "required": [
+        "id",
+        "teacherId",
+        "subjectCode",
+        "subjectName",
+        "className",
+        "semester",
+        "academicYear",
+        "schoolName",
+        "teacherName"
+      ]
+    },
+    "StudentRecord": {
+      "title": "StudentRecord",
+      "description": "A student record inside a class, containing scores, attendance, and credentials.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique student identifier."
+        },
+        "classId": {
+          "type": "string",
+          "description": "Parent class record identifier."
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Teacher UID owning this class."
+        },
+        "number": {
+          "type": "number",
+          "description": "Class roll call number (e.g. 1, 2, 3)."
+        },
+        "studentNumber": {
+          "type": "string",
+          "description": "Official student ID number (5 digits or similar)."
+        },
+        "thaiName": {
+          "type": "string",
+          "description": "Student full name in Thai."
+        },
+        "englishName": {
+          "type": "string",
+          "description": "Student full name in English."
+        },
+        "password": {
+          "type": "string",
+          "description": "Individual access password for student portal."
+        },
+        "attendance": {
+          "type": "object",
+          "description": "Map of attendance day ID to attendance remark (P, A, L, E, S)."
+        },
+        "speakingScores": {
+          "type": "object",
+          "description": "Map of speaking column ID to score."
+        },
+        "quizzesScores": {
+          "type": "object",
+          "description": "Map of quiz column ID to score."
+        },
+        "participationScores": {
+          "type": "object",
+          "description": "Map of participation column ID to score."
+        },
+        "notebookScores": {
+          "type": "object",
+          "description": "Map of notebook column ID to score."
+        },
+        "midtermScore": {
+          "type": "number",
+          "description": "Midterm test score (max 20)."
+        },
+        "finalScore": {
+          "type": "number",
+          "description": "Final test score (max 20)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when this student record was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when this student record was last updated."
+        }
+      },
+      "required": [
+        "id",
+        "classId",
+        "teacherId",
+        "number",
+        "studentNumber",
+        "thaiName",
+        "englishName"
+      ]
+    }
+  },
+  "firestore": {
+    "/classes/{classId}": {
+      "schema": "ClassRecord",
+      "description": "Class metadata, configurations, and grading structure owned by a teacher."
+    },
+    "/classes/{classId}/students/{studentId}": {
+      "schema": "StudentRecord",
+      "description": "Student roster, attendance remarks, assessment scores, and credentials for a class."
+    },
+    "/test/{docId}": {
+      "schema": {
+        "$ref": "TestConnection"
+      },
+      "description": "Connection test document verified on client boot."
+    }
+  }
+}

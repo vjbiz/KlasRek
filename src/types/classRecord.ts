@@ -62,6 +62,9 @@ export interface ClassSettings {
   googleWebAppUrl?: string;
   // Teacher access PIN (default: "teacher123")
   teacherPin?: string;
+  // School name & passing score
+  schoolName?: string;
+  passingScore?: number;
 }
 
 export interface StudentCalculation {
