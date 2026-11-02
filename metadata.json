@@ -1,0 +1,6 @@
+{
+  "name": "Thai Class Record & Google Script Generator",
+  "description": "Interactive class record spreadsheet and UI dashboard with student attendance, dynamic assessments, 0-4 grading scale, and ready-to-use Google Apps Script (.gs) exporter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
