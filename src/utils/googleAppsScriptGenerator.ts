@@ -45,28 +45,67 @@ const SETTINGS = {
 };
 
 /**
+ * Safe notification helper that works in all execution contexts:
+ * - If spreadsheet UI is available (e.g. executed from custom menu or interactive session), shows alert or toast.
+ * - If running headless, from script editor, trigger, or Web App context where getUi() throws, gracefully falls back to toast and Logger.log.
+ */
+function notifyUser_(message, title) {
+  title = title || "Class Record";
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) {
+      ss.toast(message, title, 5);
+    }
+  } catch (e) {
+    // Ignore toast failure if detached
+  }
+
+  try {
+    const ui = SpreadsheetApp.getUi();
+    if (ui) {
+      ui.alert(title, message, ui.ButtonSet.OK);
+      return;
+    }
+  } catch (e) {
+    // getUi() is not supported in this context (e.g. running from editor or web app)
+    Logger.log("[" + title + "] " + message);
+  }
+}
+
+/**
  * Creates custom menu when spreadsheet is opened
  */
 function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu("📚 Class Record System")
-    .addItem("🚀 Open Input Dashboard", "openDashboard")
-    .addSeparator()
-    .addItem("📊 Format & Build Complete Sheet", "buildClassRecordSheet")
-    .addItem("✨ Insert Sample Students", "insertSampleData")
-    .addItem("🔄 Recalculate Formulas", "refreshFormulas")
-    .addToUi();
+  try {
+    const ui = SpreadsheetApp.getUi();
+    if (ui) {
+      ui.createMenu("📚 Class Record System")
+        .addItem("🚀 Open Input Dashboard", "openDashboard")
+        .addSeparator()
+        .addItem("📊 Format & Build Complete Sheet", "buildClassRecordSheet")
+        .addItem("✨ Insert Sample Students", "insertSampleData")
+        .addItem("🔄 Recalculate Formulas", "refreshFormulas")
+        .addToUi();
+    }
+  } catch (e) {
+    Logger.log("onOpen could not initialize UI menu in this context: " + e.message);
+  }
 }
 
 /**
  * Opens the interactive HTML UI Dashboard Modal / Sidebar
  */
 function openDashboard() {
-  const html = HtmlService.createHtmlOutputFromFile("Dashboard")
-    .setTitle("Student Grade & Attendance Dashboard")
-    .setWidth(950)
-    .setHeight(680);
-  SpreadsheetApp.getUi().showModalDialog(html, "🎓 Class Record UI Dashboard - " + SETTINGS.subjectCode);
+  try {
+    const html = HtmlService.createHtmlOutputFromFile("Dashboard")
+      .setTitle("Student Grade & Attendance Dashboard")
+      .setWidth(950)
+      .setHeight(680);
+    SpreadsheetApp.getUi().showModalDialog(html, "🎓 Class Record UI Dashboard - " + SETTINGS.subjectCode);
+  } catch (e) {
+    Logger.log("openDashboard cannot open dialog in this context: " + e.message);
+    notifyUser_("Please open the Dashboard from the Google Sheet custom menu: 📚 Class Record System > 🚀 Open Input Dashboard", "Open Dashboard");
+  }
 }
 
 /**
@@ -74,6 +113,10 @@ function openDashboard() {
  */
 function buildClassRecordSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    Logger.log("Error: No active spreadsheet found. Please make sure this script is created via Extensions > Apps Script inside your Google Sheet.");
+    return;
+  }
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -249,7 +292,7 @@ function buildClassRecordSheet() {
   const rule = SpreadsheetApp.newDataValidation().requireValueInList(pList, true).setAllowInvalid(true).build();
   sheet.getRange(6, attStartCol, 40, attDaysCount).setDataValidation(rule);
 
-  SpreadsheetApp.getUi().alert("✅ Class Record Sheet formatted successfully! Use the menu to insert students or open the Input Dashboard.");
+  notifyUser_("✅ Class Record Sheet formatted successfully! Use the '📚 Class Record System' menu to insert students or open the Input Dashboard.", "Class Record Setup");
 }
 
 /**
@@ -257,6 +300,10 @@ function buildClassRecordSheet() {
  */
 function insertSampleData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    Logger.log("Error: No active spreadsheet found. Please make sure this script is created via Extensions > Apps Script inside your Google Sheet.");
+    return;
+  }
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     buildClassRecordSheet();
@@ -383,7 +430,100 @@ function insertSampleData() {
     sheet.getRange(r, curr).setFormula('=IF(' + gradeLetter + r + '>=1, "PASS", "FAIL")');
   });
 
-  SpreadsheetApp.getUi().alert("🎉 Sample students inserted with live formulas and passwords!");
+  notifyUser_("🎉 Sample students inserted with live formulas and passwords!", "Sample Data");
+}
+
+/**
+ * Refreshes and recalculates formulas across all student rows
+ */
+function refreshFormulas() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    Logger.log("No active spreadsheet found.");
+    return;
+  }
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    Logger.log("Sheet " + SHEET_NAME + " not found.");
+    return;
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 6) {
+    notifyUser_("No student records found to recalculate.", "Recalculate");
+    return;
+  }
+
+  const numDays = ${attendanceDays.length};
+  const spkCount = ${speakingCols.length};
+  const qzCount = ${quizCols.length};
+  const ptCount = ${partCols.length};
+  const nbCount = ${nbCols.length};
+
+  for (let r = 6; r <= lastRow; r++) {
+    const firstAttColLetter = columnToLetter(6);
+    const lastAttColLetter = columnToLetter(5 + numDays);
+    const totalPColLetter = columnToLetter(6 + numDays);
+    const attScoreColLetter = columnToLetter(7 + numDays);
+
+    sheet.getRange(r, 6 + numDays).setFormula('=COUNTIF(' + firstAttColLetter + r + ':' + lastAttColLetter + r + ', "P")');
+    sheet.getRange(r, 7 + numDays).setFormula('=(' + totalPColLetter + r + ' / ' + numDays + ') * ' + SETTINGS.attendanceMax);
+
+    let curr = 8 + numDays;
+    const spkStart = curr;
+    curr += spkCount;
+    const spkScoreColLetter = columnToLetter(curr);
+    sheet.getRange(r, curr).setFormula('=(SUM(' + columnToLetter(spkStart) + r + ':' + columnToLetter(curr - 1) + r + ') / ' + (spkCount * 10) + ') * ' + SETTINGS.speakingMax);
+    curr++;
+
+    const qzStart = curr;
+    curr += qzCount;
+    const qzScoreColLetter = columnToLetter(curr);
+    sheet.getRange(r, curr).setFormula('=(SUM(' + columnToLetter(qzStart) + r + ':' + columnToLetter(curr - 1) + r + ') / ' + (qzCount * 10) + ') * ' + SETTINGS.quizzesMax);
+    curr++;
+
+    const ptStart = curr;
+    curr += ptCount;
+    const ptScoreColLetter = columnToLetter(curr);
+    sheet.getRange(r, curr).setFormula('=(SUM(' + columnToLetter(ptStart) + r + ':' + columnToLetter(curr - 1) + r + ') / ' + (ptCount * 10) + ') * ' + SETTINGS.partMax);
+    curr++;
+
+    const nbStart = curr;
+    curr += nbCount;
+    const nbScoreColLetter = columnToLetter(curr);
+    sheet.getRange(r, curr).setFormula('=(SUM(' + columnToLetter(nbStart) + r + ':' + columnToLetter(curr - 1) + r + ') / ' + (nbCount * 10) + ') * ' + SETTINGS.notebookMax);
+    curr++;
+
+    const earnedColLetter = columnToLetter(curr);
+    sheet.getRange(r, curr).setFormula(
+      '=MIN(' + SETTINGS.earnedMax + ', ROUND(' + 
+      attScoreColLetter + r + ' + ' + 
+      spkScoreColLetter + r + ' + ' + 
+      qzScoreColLetter + r + ' + ' + 
+      ptScoreColLetter + r + ' + ' + 
+      nbScoreColLetter + r + ', 2))'
+    );
+    curr++;
+
+    const midLetter = columnToLetter(curr);
+    curr++;
+
+    const finLetter = columnToLetter(curr);
+    curr++;
+
+    const grandLetter = columnToLetter(curr);
+    sheet.getRange(r, curr).setFormula('=' + earnedColLetter + r + ' + ' + midLetter + r + ' + ' + finLetter + r);
+    curr++;
+
+    const gradeLetter = columnToLetter(curr);
+    const gradeFormula = '=IF(' + grandLetter + r + '>=80, 4, IF(' + grandLetter + r + '>=75, 3.5, IF(' + grandLetter + r + '>=70, 3, IF(' + grandLetter + r + '>=65, 2.5, IF(' + grandLetter + r + '>=60, 2, IF(' + grandLetter + r + '>=55, 1.5, IF(' + grandLetter + r + '>=50, 1, 0)))))))';
+    sheet.getRange(r, curr).setFormula(gradeFormula);
+    curr++;
+
+    sheet.getRange(r, curr).setFormula('=IF(' + gradeLetter + r + '>=1, "PASS", "FAIL")');
+  }
+
+  notifyUser_("✅ Formulas refreshed successfully for " + (lastRow - 5) + " students!", "Recalculate");
 }
 
 /**
@@ -808,11 +948,13 @@ function createJsonResponse(data) {
 4. I-click ang **Save icon** 💾 (o pindutin ang Ctrl+S / Cmd+S).
 5. Sa dropdown ng functions sa itaas, piliin ang \`onOpen\` o \`buildClassRecordSheet\` at i-click ang **Run**.
    *(Unang beses: hihingi ang Google ng authorization permission — i-click ang "Advanced" > "Go to Untitled project (unsafe)" > "Allow")*.
+   *(💡 Tandaan: Ligtas itong patakbuhin diretso sa editor o sa menu ng Google Sheet — may built-in safe context handler para hindi magka-error ang \`SpreadsheetApp.getUi()\`)*.
 6. Bumalik sa inyong Google Sheet! Makikita mo na ang bagong custom menu na:
    **📚 Class Record System**
    - **🚀 Open Input Dashboard**: Magbubukas ang UI modal kung saan pwede mag-input ng student details, attendance, scores, at live grade preview!
    - **📊 Format & Build Complete Sheet**: Awtomatikong ise-setup ang lahat ng columns, pastel headers, at formula.
-   - **✨ Insert Sample Students**: Maglalagay ng mga halimbawa ng estudyante na may live automated formulas!`;
+   - **✨ Insert Sample Students**: Maglalagay ng mga halimbawa ng estudyante na may live automated formulas!
+   - **🔄 Recalculate Formulas**: Awtomatikong ire-recalculate ang lahat ng formulas para sa lahat ng estudyante.`;
 
   return { codeGs, sidebarHtml, instructions };
 }
