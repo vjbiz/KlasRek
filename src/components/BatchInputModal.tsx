@@ -46,8 +46,9 @@ export const BatchInputModal: React.FC<BatchInputModalProps> = ({
 
   const handleApplyScore = () => {
     if (activeCategory === 'midterm' || activeCategory === 'final') {
-      onBatchExam(activeCategory, batchScoreValue);
-      alert(`Set ${activeCategory} score to ${batchScoreValue} for all students.`);
+      const clampedScore = Math.min(20, Math.max(0, batchScoreValue));
+      onBatchExam(activeCategory, clampedScore);
+      alert(`Set ${activeCategory.toUpperCase()} score to ${clampedScore} / 20 for all students.`);
       return;
     }
 
@@ -67,9 +68,16 @@ export const BatchInputModal: React.FC<BatchInputModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
       <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
         <div className="px-6 py-4 bg-gradient-to-r from-amber-600 to-amber-700 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-200" />
-            <h2 className="text-base font-bold">Quick Batch Entry & Attendance</h2>
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-10 h-10 object-contain rounded-full border border-amber-300 bg-white shadow-xs" 
+            />
+            <div>
+              <h2 className="text-base font-bold">Quick Batch Entry & Attendance</h2>
+              <p className="text-[11px] text-amber-200">Bulk mark attendance and batch scores across all students</p>
+            </div>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-amber-200 hover:text-white">
             <X className="w-5 h-5" />

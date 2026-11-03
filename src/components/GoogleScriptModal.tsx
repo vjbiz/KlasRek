@@ -86,9 +86,11 @@ export const GoogleScriptModal: React.FC<GoogleScriptModalProps> = ({
         {/* Modal Header */}
         <div className="px-6 py-4 bg-gradient-to-r from-emerald-700 via-teal-700 to-indigo-800 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-xl">
-              <Code2 className="w-5 h-5 text-emerald-300" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-10 h-10 object-contain rounded-full border border-emerald-300 bg-white shadow-xs" 
+            />
             <div>
               <h2 className="text-base font-bold flex items-center gap-2">
                 <span>Google Apps Script Generator (.gs) & UI Dashboard</span>

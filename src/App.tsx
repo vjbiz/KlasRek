@@ -33,6 +33,7 @@ import { User } from 'firebase/auth';
 import { initAuth } from './services/googleAuth';
 import { GoogleSheetsModal } from './components/GoogleSheetsModal';
 import { FirebaseModal } from './components/FirebaseModal';
+import { Language, TRANSLATIONS } from './utils/translations';
 
 export default function App() {
   // Local storage keys
@@ -46,11 +47,59 @@ export default function App() {
   const STORAGE_KEY_SHEET_ID = 'thai_class_record_sheet_id_v1';
   const STORAGE_KEY_SHEET_NAME = 'thai_class_record_sheet_name_v1';
   const STORAGE_KEY_SHEET_URL = 'thai_class_record_sheet_url_v1';
+  const STORAGE_KEY_THEME = 'thai_class_record_theme_v1';
+  const STORAGE_KEY_LANG = 'thai_class_record_lang_v1';
 
-  // State with LocalStorage fallbacks
+  // Theme state (Light / Dark)
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_THEME);
+    if (saved) return saved === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem(STORAGE_KEY_THEME, 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem(STORAGE_KEY_THEME, 'light');
+    }
+  }, [isDark]);
+
+  const handleToggleTheme = () => {
+    setIsDark((prev) => !prev);
+  };
+
+  // Language state (English / Thai)
+  const [lang, setLang] = useState<Language>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_LANG);
+    return saved === 'th' ? 'th' : 'en';
+  });
+
+  const handleToggleLang = () => {
+    setLang((prev) => {
+      const next = prev === 'en' ? 'th' : 'en';
+      localStorage.setItem(STORAGE_KEY_LANG, next);
+      return next;
+    });
+  };
+
+  // State with LocalStorage fallbacks & guaranteed 20 max for midterm/final
   const [settings, setSettings] = useState<ClassSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
-    return saved ? JSON.parse(saved) : INITIAL_SETTINGS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_SETTINGS,
+          ...parsed,
+          midtermMaxScore: parsed.midtermMaxScore || 20,
+          finalMaxScore: parsed.finalMaxScore || 20,
+        };
+      } catch (e) {}
+    }
+    return INITIAL_SETTINGS;
   });
 
   const [attendanceDays, setAttendanceDays] = useState<AttendanceDay[]>(() => {
@@ -260,14 +309,16 @@ export default function App() {
     );
   };
 
-  // Student Exam Score Handler
+  // Student Exam Score Handler (Midterm & Final - Max 20 each)
   const handleUpdateExam = (studentId: string, type: 'midterm' | 'final', val: number | null) => {
+    const maxLimit = type === 'midterm' ? (settings.midtermMaxScore || 20) : (settings.finalMaxScore || 20);
+    const clamped = val !== null ? Math.min(maxLimit, Math.max(0, val)) : null;
     setStudents((prev) =>
       prev.map((s) => {
         if (s.id !== studentId) return s;
         return {
           ...s,
-          [type === 'midterm' ? 'midtermScore' : 'finalScore']: val,
+          [type === 'midterm' ? 'midtermScore' : 'finalScore']: clamped,
         };
       })
     );
@@ -386,10 +437,12 @@ export default function App() {
   };
 
   const handleBatchExam = (type: 'midterm' | 'final', score: number) => {
+    const maxLimit = type === 'midterm' ? (settings.midtermMaxScore || 20) : (settings.finalMaxScore || 20);
+    const clamped = Math.min(maxLimit, Math.max(0, score));
     setStudents((prev) =>
       prev.map((s) => ({
         ...s,
-        [type === 'midterm' ? 'midtermScore' : 'finalScore']: score,
+        [type === 'midterm' ? 'midtermScore' : 'finalScore']: clamped,
       }))
     );
   };
@@ -436,6 +489,10 @@ export default function App() {
         calculations={calculations}
         onLoginSuccess={handleStudentLoginSuccess}
         onTeacherLogin={() => setCurrentMode('teacher')}
+        lang={lang}
+        onToggleLang={handleToggleLang}
+        isDark={isDark}
+        onToggleTheme={handleToggleTheme}
       />
     );
   }
@@ -447,7 +504,6 @@ export default function App() {
     const studentCalculation = calculations.find((c) => c.student.id === loggedStudentId);
 
     if (!studentCalculation) {
-      // In case student record is missing or deleted
       return (
         <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-4">
           <div className="bg-slate-800 p-6 rounded-2xl max-w-sm text-center space-y-4">
@@ -476,6 +532,10 @@ export default function App() {
         notebookColumns={notebookColumns}
         settings={settings}
         onLogout={handleStudentLogout}
+        lang={lang}
+        onToggleLang={handleToggleLang}
+        isDark={isDark}
+        onToggleTheme={handleToggleTheme}
       />
     );
   }
@@ -484,7 +544,7 @@ export default function App() {
   // VIEW 3: INSTRUCTOR / TEACHER DASHBOARD (FULL GRADING SPREADSHEET)
   // -------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* Top Header */}
       <ClassHeader
         settings={settings}
@@ -508,6 +568,10 @@ export default function App() {
         onSwitchToStudentPortal={() => setCurrentMode('student_login')}
         activeView={activeView}
         setActiveView={setActiveView}
+        lang={lang}
+        onToggleLang={handleToggleLang}
+        isDark={isDark}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Content Area */}
@@ -522,6 +586,7 @@ export default function App() {
             participationColumns={participationColumns}
             notebookColumns={notebookColumns}
             settings={settings}
+            lang={lang}
             onUpdateAttendance={handleUpdateAttendance}
             onUpdateScore={handleUpdateScore}
             onUpdateExam={handleUpdateExam}
@@ -551,12 +616,15 @@ export default function App() {
       {/* Footer Info */}
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 px-6 text-center text-xs text-slate-500 dark:text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>
-            Thai Class Record System • Formula:{' '}
-            <code className="text-indigo-600 dark:text-indigo-400 font-mono">
-              IF(Total&gt;=80, 4, IF(Total&gt;=75, 3.5, ...))
-            </code>
-          </span>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="KR Logo" className="w-5 h-5 rounded-full object-contain border border-amber-400 bg-white" />
+            <span>
+              KR Class Record System • Formula:{' '}
+              <code className="text-indigo-600 dark:text-indigo-400 font-mono">
+                IF(Total&gt;=80, 4, IF(Total&gt;=75, 3.5, ...))
+              </code>
+            </span>
+          </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsFirebaseModalOpen(true)}

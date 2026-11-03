@@ -150,8 +150,12 @@ export const StudentModal: React.FC<StudentModalProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-6">
         {/* Header */}
         <div className="px-6 py-4 bg-gradient-to-r from-indigo-700 to-indigo-800 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <UserCheck className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-10 h-10 object-contain rounded-full border border-amber-400 bg-white shadow-xs" 
+            />
             <div>
               <h2 className="text-base font-bold">
                 {editingStudent ? 'Edit Student Details & Marks' : 'Add New Student Record'}

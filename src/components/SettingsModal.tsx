@@ -38,9 +38,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
       <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-base font-bold">Class Information & Score Configuration</h2>
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-10 h-10 object-contain rounded-full border border-amber-400 bg-white shadow-xs" 
+            />
+            <div>
+              <h2 className="text-base font-bold">Class Information & Score Configuration</h2>
+              <p className="text-[11px] text-slate-400">Configure score weights (60 earned + 20 midterm + 20 final = 100)</p>
+            </div>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
             <X className="w-5 h-5" />

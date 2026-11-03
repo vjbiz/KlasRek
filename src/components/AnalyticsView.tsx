@@ -207,6 +207,26 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               <div className="bg-pink-500 h-full rounded-full" style={{ width: `${(avgNotebook / settings.notebookMaxScore) * 100}%` }} />
             </div>
           </div>
+
+          <div>
+            <div className="flex justify-between font-medium mb-1">
+              <span className="text-teal-700 dark:text-teal-300 font-bold">Midterm Exam (สอบกลางภาค - Max {settings.midtermMaxScore || 20})</span>
+              <span>{avgMidterm.toFixed(1)} / {settings.midtermMaxScore || 20} pts ({(((avgMidterm) / (settings.midtermMaxScore || 20)) * 100).toFixed(0)}%)</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div className="bg-teal-500 h-full rounded-full" style={{ width: `${((avgMidterm) / (settings.midtermMaxScore || 20)) * 100}%` }} />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between font-medium mb-1">
+              <span className="text-emerald-700 dark:text-emerald-300 font-bold">Final Exam (สอบปลายภาค - Max {settings.finalMaxScore || 20})</span>
+              <span>{avgFinal.toFixed(1)} / {settings.finalMaxScore || 20} pts ({(((avgFinal) / (settings.finalMaxScore || 20)) * 100).toFixed(0)}%)</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${((avgFinal) / (settings.finalMaxScore || 20)) * 100}%` }} />
+            </div>
+          </div>
         </div>
       </div>
 

@@ -19,6 +19,7 @@ import {
   StudentCalculation 
 } from '../types/classRecord';
 import { REMARKS_INFO } from '../utils/gradeCalculations';
+import { Language, TRANSLATIONS } from '../utils/translations';
 
 interface SpreadsheetViewProps {
   students: Student[];
@@ -29,6 +30,7 @@ interface SpreadsheetViewProps {
   participationColumns: ScoreColumn[];
   notebookColumns: ScoreColumn[];
   settings: ClassSettings;
+  lang?: Language;
   
   onUpdateAttendance: (studentId: string, dayId: string, remark: AttendanceRemark | '') => void;
   onUpdateScore: (studentId: string, category: 'speaking' | 'quizzes' | 'participation' | 'notebook', colId: string, val: number | null) => void;
@@ -51,6 +53,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
   participationColumns,
   notebookColumns,
   settings,
+  lang = 'en',
   onUpdateAttendance,
   onUpdateScore,
   onUpdateExam,
@@ -62,6 +65,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
   onDeleteStudent,
   onAddStudent,
 }) => {
+  const t = TRANSLATIONS[lang];
   const [searchQuery, setSearchQuery] = useState('');
   const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<'number' | 'grandTotal' | 'name' | 'rank'>('number');
@@ -128,7 +132,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by ID, Thai or English name..."
+              placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
@@ -143,7 +147,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
               onChange={(e) => setGradeFilter(e.target.value)}
               className="text-xs py-1.5 px-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="all">All Grades (0 - 4.0)</option>
+              <option value="all">{t.filterAllGrades} (0 - 4.0)</option>
               <option value="pass">Passed (≥ 1.0)</option>
               <option value="fail">Failed (Grade 0)</option>
               <option value="4">Grade 4.0 (80-100)</option>
@@ -167,7 +171,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
               }`}
             >
-              No. {sortField === 'number' && (sortAsc ? '↑' : '↓')}
+              {t.sortNo} {sortField === 'number' && (sortAsc ? '↑' : '↓')}
             </button>
             <button
               onClick={() => toggleSort('grandTotal')}
@@ -177,7 +181,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
               }`}
             >
-              Score {sortField === 'grandTotal' && (sortAsc ? '↑' : '↓')}
+              {t.sortScore} {sortField === 'grandTotal' && (sortAsc ? '↑' : '↓')}
             </button>
             <button
               onClick={() => toggleSort('rank')}
@@ -187,19 +191,19 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
               }`}
             >
-              Rank {sortField === 'rank' && (sortAsc ? '↑' : '↓')}
+              {t.sortRank} {sortField === 'rank' && (sortAsc ? '↑' : '↓')}
             </button>
           </div>
         </div>
 
         {/* Legend / Quick Guide */}
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-          <span className="font-medium text-slate-500">Remarks:</span>
-          <span className="px-1.5 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">P = Present</span>
-          <span className="px-1.5 py-0.5 rounded font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300">A = Absent</span>
-          <span className="px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300">L = Late</span>
-          <span className="px-1.5 py-0.5 rounded font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300">E = Excused</span>
-          <span className="px-1.5 py-0.5 rounded font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300">S = Sick</span>
+          <span className="font-medium text-slate-500">{t.remRemarks}:</span>
+          <span className="px-1.5 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">P = {t.remPresent}</span>
+          <span className="px-1.5 py-0.5 rounded font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300">A = {t.remAbsent}</span>
+          <span className="px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300">L = {t.remLate}</span>
+          <span className="px-1.5 py-0.5 rounded font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300">E = {t.remExcused}</span>
+          <span className="px-1.5 py-0.5 rounded font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300">S = {t.remSick}</span>
         </div>
       </div>
 
@@ -213,7 +217,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                 {/* Fixed student identification */}
                 <th colSpan={4} className="p-2.5 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-left border-r border-slate-300 dark:border-slate-700">
                   <div className="flex items-center justify-between">
-                    <span>STUDENT DETAILS (ข้อมูลนักเรียน)</span>
+                    <span>{t.grpStudentDetails}</span>
                     <button
                       onClick={onAddStudent}
                       className="p-1 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-950 rounded"
@@ -227,7 +231,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                 {/* Attendance Group */}
                 <th colSpan={attendanceDays.length + 2} className="p-2 bg-emerald-600 text-white border-r border-emerald-700">
                   <div className="flex items-center justify-between px-2">
-                    <span className="tracking-wide">ATTENDANCE (เวลาเรียน - P, A, L, E, S)</span>
+                    <span className="tracking-wide">{t.grpAttendance}</span>
                     <button
                       onClick={onAddAttendanceDay}
                       className="px-2 py-0.5 text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white rounded font-medium flex items-center gap-1"
@@ -242,7 +246,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                 {/* Speaking Scores Group (15 max) */}
                 <th colSpan={speakingColumns.length + 1} className="p-2 bg-amber-600 text-white border-r border-amber-700">
                   <div className="flex items-center justify-between px-2">
-                    <span className="tracking-wide">SPEAKING SCORES (ทักษะพูด - Max {settings.speakingMaxScore})</span>
+                    <span className="tracking-wide">{t.grpSpeaking} (Max {settings.speakingMaxScore})</span>
                     <button
                       onClick={() => onAddColumn('speaking')}
                       className="px-2 py-0.5 text-[10px] bg-amber-700 hover:bg-amber-800 text-white rounded font-medium flex items-center gap-1"
@@ -257,7 +261,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                 {/* Quizzes Scores Group (15 max) */}
                 <th colSpan={quizzesColumns.length + 1} className="p-2 bg-indigo-600 text-white border-r border-indigo-700">
                   <div className="flex items-center justify-between px-2">
-                    <span className="tracking-wide">QUIZZES (ทดสอบย่อย - Max {settings.quizzesMaxScore})</span>
+                    <span className="tracking-wide">{t.grpQuizzes} (Max {settings.quizzesMaxScore})</span>
                     <button
                       onClick={() => onAddColumn('quizzes')}
                       className="px-2 py-0.5 text-[10px] bg-indigo-700 hover:bg-indigo-800 text-white rounded font-medium flex items-center gap-1"
@@ -272,7 +276,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                 {/* Participation Scores Group */}
                 <th colSpan={participationColumns.length + 1} className="p-2 bg-fuchsia-600 text-white border-r border-fuchsia-700">
                   <div className="flex items-center justify-between px-2">
-                    <span className="tracking-wide">PARTICIPATION (มีส่วนร่วม - Max {settings.participationMaxScore})</span>
+                    <span className="tracking-wide">{t.grpParticipation} (Max {settings.participationMaxScore})</span>
                     <button
                       onClick={() => onAddColumn('participation')}
                       className="px-2 py-0.5 text-[10px] bg-fuchsia-700 hover:bg-fuchsia-800 text-white rounded font-medium flex items-center gap-1"
@@ -287,7 +291,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                 {/* Notebook Scores Group (10 max) */}
                 <th colSpan={notebookColumns.length + 1} className="p-2 bg-pink-600 text-white border-r border-pink-700">
                   <div className="flex items-center justify-between px-2">
-                    <span className="tracking-wide">NOTEBOOK (สมุด - Max {settings.notebookMaxScore})</span>
+                    <span className="tracking-wide">{t.grpNotebook} (Max {settings.notebookMaxScore})</span>
                     <button
                       onClick={() => onAddColumn('notebook')}
                       className="px-2 py-0.5 text-[10px] bg-pink-700 hover:bg-pink-800 text-white rounded font-medium flex items-center gap-1"
@@ -300,48 +304,48 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                 </th>
 
                 {/* Earned Score Summary (60 max) */}
-                <th rowSpan={2} className="p-2 bg-sky-700 text-white border-r border-sky-800 text-center min-w-[75px] align-middle">
-                  <div className="font-bold">EARNED</div>
-                  <div className="text-[10px] text-sky-200">Max {settings.earnedMaxScore}</div>
+                <th rowSpan={2} className="p-2 bg-sky-700 text-white border-r border-sky-800 text-center min-w-[80px] align-middle">
+                  <div className="font-bold">{t.grpEarned}</div>
+                  <div className="text-[10px] text-sky-200">Max {settings.earnedMaxScore || 60}</div>
                 </th>
 
                 {/* Midterm (20 max) */}
-                <th rowSpan={2} className="p-2 bg-teal-700 text-white border-r border-teal-800 text-center min-w-[65px] align-middle">
-                  <div className="font-bold">MIDTERM</div>
-                  <div className="text-[10px] text-teal-200">Max {settings.midtermMaxScore}</div>
+                <th rowSpan={2} className="p-2 bg-teal-700 text-white border-r border-teal-800 text-center min-w-[75px] align-middle shadow-xs">
+                  <div className="font-extrabold">{t.grpMidterm}</div>
+                  <div className="text-[10px] text-teal-200 font-mono font-bold">Max {settings.midtermMaxScore || 20}</div>
                 </th>
 
                 {/* Final (20 max) */}
-                <th rowSpan={2} className="p-2 bg-emerald-800 text-white border-r border-emerald-900 text-center min-w-[65px] align-middle">
-                  <div className="font-bold">FINAL</div>
-                  <div className="text-[10px] text-emerald-200">Max {settings.finalMaxScore}</div>
+                <th rowSpan={2} className="p-2 bg-emerald-800 text-white border-r border-emerald-900 text-center min-w-[75px] align-middle shadow-xs">
+                  <div className="font-extrabold">{t.grpFinal}</div>
+                  <div className="text-[10px] text-emerald-200 font-mono font-bold">Max {settings.finalMaxScore || 20}</div>
                 </th>
 
                 {/* Grand Total Score (100 max) */}
-                <th rowSpan={2} className="p-2 bg-slate-900 text-white border-r border-slate-950 text-center min-w-[80px] align-middle">
-                  <div className="font-bold">GRAND TOTAL</div>
-                  <div className="text-[10px] text-amber-300">Max 100</div>
+                <th rowSpan={2} className="p-2 bg-slate-900 text-white border-r border-slate-950 text-center min-w-[85px] align-middle">
+                  <div className="font-extrabold">{t.grpGrandTotal}</div>
+                  <div className="text-[10px] text-amber-300 font-mono font-bold">Max 100</div>
                 </th>
 
                 {/* Thai Grade Equivalency (0 - 4.0) */}
                 <th rowSpan={2} className="p-2 bg-orange-600 text-white border-r border-orange-700 text-center min-w-[85px] align-middle">
-                  <div className="font-bold">GRADE</div>
-                  <div className="text-[10px] text-orange-200">Scale 0 - 4.0</div>
+                  <div className="font-bold">{t.grpGrade}</div>
+                  <div className="text-[10px] text-orange-200">0 - 4.0</div>
                 </th>
 
                 {/* Status & Actions */}
                 <th rowSpan={2} className="p-2 bg-slate-800 text-white text-center min-w-[80px] align-middle">
-                  ACTIONS
+                  {t.grpActions}
                 </th>
               </tr>
 
               {/* Header Tier 2: Sub-columns */}
               <tr className="border-b border-slate-300 dark:border-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300 text-center">
                 {/* Student info sub-headers */}
-                <th className="p-2 w-10 text-center border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">#</th>
-                <th className="p-2 w-20 text-left border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">Student ID</th>
-                <th className="p-2 min-w-[150px] text-left border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">Thai Name</th>
-                <th className="p-2 min-w-[150px] text-left border-r border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">English Name</th>
+                <th className="p-2 w-10 text-center border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">{t.colNo}</th>
+                <th className="p-2 w-20 text-left border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">{t.colStudentId}</th>
+                <th className="p-2 min-w-[150px] text-left border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">{t.colThaiName}</th>
+                <th className="p-2 min-w-[150px] text-left border-r border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">{t.colEnglishName}</th>
 
                 {/* Attendance days */}
                 {attendanceDays.map((day, idx) => (
@@ -637,36 +641,46 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
                       </td>
 
                       {/* Midterm Test Score (Max 20) */}
-                      <td className="p-1.5 text-center border-r border-teal-200 dark:border-teal-900 bg-teal-50/30 dark:bg-teal-950/20">
+                      <td className="p-1.5 text-center border-r border-teal-200 dark:border-teal-900 bg-teal-50/40 dark:bg-teal-950/20">
                         <input
                           type="number"
                           min="0"
-                          max={settings.midtermMaxScore}
+                          max={settings.midtermMaxScore || 20}
                           step="0.5"
                           value={s.midtermScore !== null && s.midtermScore !== undefined ? s.midtermScore : ''}
                           onChange={(e) => {
-                            const parsed = e.target.value === '' ? null : Number(e.target.value);
-                            onUpdateExam(s.id, 'midterm', parsed);
+                            if (e.target.value === '') {
+                              onUpdateExam(s.id, 'midterm', null);
+                            } else {
+                              const parsed = Math.min(settings.midtermMaxScore || 20, Math.max(0, Number(e.target.value)));
+                              onUpdateExam(s.id, 'midterm', parsed);
+                            }
                           }}
-                          className="w-14 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 rounded text-teal-900 dark:text-teal-200 focus:ring-2 focus:ring-teal-500 focus:outline-hidden"
-                          placeholder="/20"
+                          className="w-14 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 rounded text-teal-900 dark:text-teal-200 focus:ring-2 focus:ring-teal-500 focus:outline-hidden shadow-2xs"
+                          placeholder={`/${settings.midtermMaxScore || 20}`}
+                          title={`Midterm Score (Max ${settings.midtermMaxScore || 20})`}
                         />
                       </td>
 
                       {/* Final Test Score (Max 20) */}
-                      <td className="p-1.5 text-center border-r border-emerald-200 dark:border-emerald-900 bg-emerald-50/30 dark:bg-emerald-950/20">
+                      <td className="p-1.5 text-center border-r border-emerald-200 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20">
                         <input
                           type="number"
                           min="0"
-                          max={settings.finalMaxScore}
+                          max={settings.finalMaxScore || 20}
                           step="0.5"
                           value={s.finalScore !== null && s.finalScore !== undefined ? s.finalScore : ''}
                           onChange={(e) => {
-                            const parsed = e.target.value === '' ? null : Number(e.target.value);
-                            onUpdateExam(s.id, 'final', parsed);
+                            if (e.target.value === '') {
+                              onUpdateExam(s.id, 'final', null);
+                            } else {
+                              const parsed = Math.min(settings.finalMaxScore || 20, Math.max(0, Number(e.target.value)));
+                              onUpdateExam(s.id, 'final', parsed);
+                            }
                           }}
-                          className="w-14 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded text-emerald-900 dark:text-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                          placeholder="/20"
+                          className="w-14 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded text-emerald-900 dark:text-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden shadow-2xs"
+                          placeholder={`/${settings.finalMaxScore || 20}`}
+                          title={`Final Score (Max ${settings.finalMaxScore || 20})`}
                         />
                       </td>
 
